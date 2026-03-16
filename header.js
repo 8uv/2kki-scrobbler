@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        ynohook
 // @namespace   bajookieland
-// @match       https://ynoproject.net/*
+// @match       https://ynoproject.net/2kki
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=ynoproject.net
 // @grant       GM_getValue
 // @grant       GM_setValue
