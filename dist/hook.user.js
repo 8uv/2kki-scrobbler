@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        ynohook
 // @namespace   bajookieland
-// @match       https://ynoproject.net/*
+// @match       https://ynoproject.net/2kki
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=ynoproject.net
 // @grant       GM_getValue
 // @grant       GM_setValue
@@ -10,7 +10,7 @@
 // @grant       GM_openInTab
 // @run-at      document-start
 // @require     https://maple.puppygirls.life/files/soundtrack-data.js
-// @connect     *://yume.wiki/*
+// @downloadURL https://github.com/8uv/2kki-scrobbler/raw/refs/heads/main/dist/hook.user.js
 // @version     1.0
 // @author      kalcifur
 // @description 10/03/2026, 11:22:17
@@ -267,7 +267,7 @@
             const duration = Math.floor(buffer.duration) >= 30 ? Math.floor(buffer.duration) : 30;
             console.log(`Track duration: ${duration} seconds`);
             if (session && scrobblingEnabled) {
-              if (currentlyPlaying) {
+              if (currentlyPlaying && scrobbleTimer > 30) {
                 const prevData = currentlyPlaying.data;
                 fm.scrobble({
                   artist: prevData.author,

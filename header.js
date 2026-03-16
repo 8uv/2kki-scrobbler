@@ -10,7 +10,6 @@
 // @grant       GM_openInTab
 // @run-at      document-start
 // @require     https://maple.puppygirls.life/files/soundtrack-data.js
-// @connect     *://yume.wiki/*
 // @downloadURL https://github.com/8uv/2kki-scrobbler/raw/refs/heads/main/dist/hook.user.js
 // @version     1.0
 // @author      kalcifur
