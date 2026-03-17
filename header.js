@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name        ynohook
 // @namespace   bajookieland
-// @match       https://ynoproject.net/2kki
+// @match       https://ynoproject.net/2kki*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=ynoproject.net
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_xmlhttpRequest
 // @grant       GM_openInTab
+// @grant       GM_info
 // @run-at      document-start
 // @require     https://maple.puppygirls.life/files/soundtrack-data.js
 // @downloadURL https://github.com/8uv/2kki-scrobbler/raw/refs/heads/main/dist/hook.user.js

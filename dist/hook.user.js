@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name        ynohook
 // @namespace   bajookieland
-// @match       https://ynoproject.net/2kki
+// @match       https://ynoproject.net/2kki*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=ynoproject.net
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
 // @grant       GM_xmlhttpRequest
 // @grant       GM_openInTab
+// @grant       GM_info
 // @run-at      document-start
 // @require     https://maple.puppygirls.life/files/soundtrack-data.js
 // @downloadURL https://github.com/8uv/2kki-scrobbler/raw/refs/heads/main/dist/hook.user.js
@@ -39,7 +40,9 @@
       }, timeout2);
     });
   };
-  var alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  var Log = (...args) => {
+    console.log(`%c[${GM_info.script.name} v${GM_info.script.version}]`, "font-size: 1.4em; color: #de99d1; text-shadow: 1px 1px 0px #fff;", ...args);
+  };
 
   // src/hook.ts
   var hookOpen = async (cb) => {
@@ -202,6 +205,7 @@
       GM_deleteValue(KEY_STATE);
     }
     async function scrobble(params) {
+      Log(`Requested scrobble with parameters :`, params);
       const session = getSession();
       if (!session) throw new Error("Not authenticated \u2014 call initiateAuth() then completeAuth() first.");
       const res = await gmPostJson(`${base}/scrobble`, {
@@ -216,6 +220,7 @@
       if (res["error"]) throw new Error(res["error"]);
     }
     async function updateNowPlaying(params) {
+      Log(`Requested now playing with parameters :`, params);
       const session = getSession();
       if (!session) throw new Error("Not authenticated \u2014 call initiateAuth() then completeAuth() first.");
       const res = await gmPostJson(`${base}/now-playing`, {
@@ -255,6 +260,25 @@
     setInterval(() => {
       scrobbleTimer++;
     }, 1e3);
+    const setupTrackLoop = (trackData, duration) => {
+      if (loopInterval) clearInterval(loopInterval);
+      loopInterval = setInterval(() => {
+        fm.scrobble({
+          artist: trackData.author,
+          track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
+          album: trackData.location,
+          duration,
+          timestamp: Math.floor(Date.now() / 1e3) - duration
+        }).catch((e) => console.error("Failed to scrobble track:", e));
+        fm.updateNowPlaying({
+          artist: trackData.author,
+          track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
+          album: trackData.location,
+          duration
+        }).catch((e) => console.error("Failed to update Now Playing:", e));
+        scrobbleTimer = 0;
+      }, duration * 1e3);
+    };
     hookOpen((...args) => {
       const path = args[0];
       if (typeof path === "string" && path.match("/easyrpg/.*/Music/") && path.endsWith(".opus")) {
@@ -280,19 +304,10 @@
               fm.updateNowPlaying({
                 artist: trackData.author,
                 track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
-                album: trackData.location
+                album: trackData.location,
+                duration
               }).catch((e) => console.error("Failed to update Now Playing:", e));
-              if (loopInterval) clearInterval(loopInterval);
-              loopInterval = setInterval(() => {
-                fm.scrobble({
-                  artist: trackData.author,
-                  track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
-                  album: trackData.location,
-                  duration,
-                  timestamp: Math.floor(Date.now() / 1e3) - duration
-                }).catch((e) => console.error("Failed to scrobble track:", e));
-                scrobbleTimer = 0;
-              }, duration * 1e3);
+              setupTrackLoop(trackData, duration);
             }
             currentlyPlaying = {
               AudioBuffer: buffer,
@@ -331,19 +346,23 @@
           button.querySelector("svg")?.querySelector("path")?.setAttribute("fill", !scrobblingEnabled ? "#c00" : "white");
           if (scrobblingEnabled && session && currentlyPlaying) {
             const trackData = currentlyPlaying.data;
+            const duration = Math.floor(currentlyPlaying.AudioBuffer.duration) >= 30 ? Math.floor(currentlyPlaying.AudioBuffer.duration) : 30;
             fm.updateNowPlaying({
               artist: trackData.author,
               track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
-              album: trackData.location
+              album: trackData.location,
+              duration
             }).catch((e) => console.error("Failed to update Now Playing:", e));
+            setupTrackLoop(trackData, duration);
           }
           if (!scrobblingEnabled && session && currentlyPlaying) {
             const trackData = currentlyPlaying.data;
+            const duration = Math.floor(currentlyPlaying.AudioBuffer.duration) >= 30 ? Math.floor(currentlyPlaying.AudioBuffer.duration) : 30;
             fm.scrobble({
               artist: trackData.author,
               track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
               album: trackData.location,
-              duration: Math.floor(currentlyPlaying.AudioBuffer.duration),
+              duration,
               timestamp: Math.floor(Date.now() / 1e3) - scrobbleTimer
             }).catch((e) => console.error("Failed to scrobble track:", e));
             fm.updateNowPlaying({

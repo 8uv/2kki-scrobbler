@@ -27,7 +27,6 @@ export const hookOpen = async (cb: (...args: any[]) => void) => {
     const open = FS.open;
 
     easyrpgPlayer.FS.open = function (...args) {
-        // console.log("FS.open called with arguments:", args);
         cb(...args);
         return open.apply(this, args);
     };

@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 
 import '@violentmonkey/types'
+import { Log } from "./util";
 
 declare function GM_getValue(key: string, defaultValue: string): string;
 declare function GM_getValue(key: string): string | undefined;
@@ -204,7 +205,7 @@ export function createLastFMProxyClient(serverUrl: string): LastFMClient {
         // Poll the server every 2 s for up to 2 minutes
         for (let i = 0; i < 60; i++) {
             await new Promise<void>(r => setTimeout(r, 2000));
-            console.log(`polling ${base}/auth/poll/${encodeURIComponent(stateId)}`);
+            Log(`Auth: polling ${base}/auth/poll/${encodeURIComponent(stateId)}`);
             const poll = await gmGet(`${base}/auth/poll/${encodeURIComponent(stateId)}`) as Record<string, unknown>;
             if (poll["error"]) throw new Error(`Auth failed: ${poll["error"]}`);
             if (poll["done"]) {
@@ -226,6 +227,8 @@ export function createLastFMProxyClient(serverUrl: string): LastFMClient {
     }
 
     async function scrobble(params: ScrobbleParams): Promise<void> {
+        Log(`Requested scrobble with parameters :`, params);
+
         const session = getSession();
         if (!session) throw new Error("Not authenticated — call initiateAuth() then completeAuth() first.");
         const res = await gmPostJson(`${base}/scrobble`, {
@@ -241,6 +244,8 @@ export function createLastFMProxyClient(serverUrl: string): LastFMClient {
     }
 
     async function updateNowPlaying(params: Omit<ScrobbleParams, "timestamp">): Promise<void> {
+        Log(`Requested now playing with parameters :`, params);
+
         const session = getSession();
         if (!session) throw new Error("Not authenticated — call initiateAuth() then completeAuth() first.");
         const res = await gmPostJson(`${base}/now-playing`, {

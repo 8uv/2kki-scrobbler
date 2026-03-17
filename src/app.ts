@@ -1,5 +1,6 @@
 import { hookOpen, getAudioBuffer } from "./hook";
 import { createLastFMProxyClient } from "./fm";
+import { Log } from "./util";
 import type { LastFMSession } from "./fm";
 
 interface SoundtrackRecord {
@@ -48,6 +49,28 @@ const html = `
         scrobbleTimer++
     }, 1000);
 
+    const setupTrackLoop = (trackData: SoundtrackRecord, duration: number) => {
+        if (loopInterval) clearInterval(loopInterval);
+        loopInterval = setInterval(() => {
+            fm.scrobble({
+                artist: trackData.author,
+                track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
+                album: trackData.location,
+                duration,
+                timestamp: Math.floor(Date.now() / 1000) - duration,
+            }).catch(e => console.error("Failed to scrobble track:", e));
+
+            fm.updateNowPlaying({
+                artist: trackData.author,
+                track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
+                album: trackData.location,
+                duration: duration,
+            }).catch(e => console.error("Failed to update Now Playing:", e));
+
+            scrobbleTimer = 0;
+        }, duration * 1000);
+    }
+
     hookOpen((...args) => { // runs every time a new track is played
         const path = args[0];
         if (typeof path === "string" && (path as string).match("/easyrpg/.*/Music/") && (path as string).endsWith(".opus")) {
@@ -55,13 +78,13 @@ const html = `
             if (!trackName) return;
             const trackData = soundtrackMap.get(trackName);
 
-            console.log(trackData);
+            Log(`Track data for file ${path}:`, trackData ?? "No metadata found for this track");
+            
             if (trackData) {
 
                 // get track duration
                 getAudioBuffer(path).then(buffer => {
                     const duration = Math.floor(buffer.duration) >= 30 ? Math.floor(buffer.duration) : 30;
-                    console.log(`Track duration: ${duration} seconds`);
 
                     if (session && scrobblingEnabled) {
                         if (currentlyPlaying && scrobbleTimer > 30) {
@@ -79,20 +102,10 @@ const html = `
                             artist: trackData.author,
                             track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
                             album: trackData.location,
+                            duration: duration,
                         }).catch(e => console.error("Failed to update Now Playing:", e));
 
-                        if (loopInterval) clearInterval(loopInterval);
-                        loopInterval = setInterval(() => {
-                            fm.scrobble({
-                                artist: trackData.author,
-                                track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
-                                album: trackData.location,
-                                duration,
-                                timestamp: Math.floor(Date.now() / 1000) - duration,
-                            }).catch(e => console.error("Failed to scrobble track:", e));
-
-                            scrobbleTimer = 0;
-                        }, duration * 1000);
+                        setupTrackLoop(trackData, duration);
                     }
 
                     currentlyPlaying = {
@@ -140,20 +153,27 @@ const html = `
 
                 if (scrobblingEnabled && session && currentlyPlaying) {
                     const trackData = currentlyPlaying.data;
+                    const duration = Math.floor(currentlyPlaying.AudioBuffer.duration) >= 30 ? Math.floor(currentlyPlaying.AudioBuffer.duration) : 30;
+
                     fm.updateNowPlaying({
                         artist: trackData.author,
                         track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
                         album: trackData.location,
+                        duration: duration,
                     }).catch(e => console.error("Failed to update Now Playing:", e));
+
+                    setupTrackLoop(trackData, duration);
                 }
 
                 if (!scrobblingEnabled && session && currentlyPlaying) {
                     const trackData = currentlyPlaying.data;
+                    const duration = Math.floor(currentlyPlaying.AudioBuffer.duration) >= 30 ? Math.floor(currentlyPlaying.AudioBuffer.duration) : 30;
+
                     fm.scrobble({
                         artist: trackData.author,
                         track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
                         album: trackData.location,
-                        duration: Math.floor(currentlyPlaying.AudioBuffer.duration),
+                        duration: duration,
                         timestamp: Math.floor(Date.now() / 1000) - scrobbleTimer,
                     }).catch(e => console.error("Failed to scrobble track:", e));
 

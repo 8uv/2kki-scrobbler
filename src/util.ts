@@ -1,16 +1,11 @@
-// const yieldForGlobal = (name: string,  timeout: number = 125): Promise<any> => {
-//     return new Promise(async (resolve, reject) => {
-//         try {
-//             const g = eval(name);
-//             if (typeof g !== 'undefined') resolve(g)
-//                 else await new Promise(r => setTimeout(r, timeout)).then(() => resolve(yieldForGlobal(name, timeout)));
-//         } catch (e) {
-//             reject(e);
-//         }
-//     });
-// };
+declare const GM_info: {
+    script: {
+        name: string;
+        version: string;
+    }
+};
 
-const yieldForGlobal = (name: string,  timeout: number = 125): Promise<any> => {
+export const yieldForGlobal = (name: string,  timeout: number = 125): Promise<any> => {
     return new Promise(async (resolve, reject) => {
         try {
             const g = eval(`typeof ${name} !== 'undefined' ? ${name} : undefined`);
@@ -22,7 +17,7 @@ const yieldForGlobal = (name: string,  timeout: number = 125): Promise<any> => {
     });
 };
 
-const yieldForProp = async (obj: any, prop: string, timeout: number = 125): Promise<any> => {
+export const yieldForProp = async (obj: any, prop: string, timeout: number = 125): Promise<any> => {
     return new Promise((resolve) => {
         const interval = setInterval(() => {
             if (obj[prop] !== undefined) {
@@ -33,6 +28,6 @@ const yieldForProp = async (obj: any, prop: string, timeout: number = 125): Prom
     });
 };
 
-const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-export { yieldForGlobal, yieldForProp, alphabet };
+export const Log = (...args: any[]) => {
+    console.log(`%c[${GM_info.script.name} v${GM_info.script.version}]`, 'font-size: 1.4em; color: #de99d1; text-shadow: 1px 1px 0px #fff;', ...args);
+}
