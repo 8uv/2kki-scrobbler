@@ -52,20 +52,22 @@ const html = `
     const setupTrackLoop = (trackData: SoundtrackRecord, duration: number) => {
         if (loopInterval) clearInterval(loopInterval);
         loopInterval = setInterval(() => {
-            fm.scrobble({
-                artist: trackData.author,
-                track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
-                album: trackData.location,
-                duration,
-                timestamp: Math.floor(Date.now() / 1000) - duration,
-            }).catch(e => console.error("Failed to scrobble track:", e));
+            if (scrobblingEnabled) {
+                fm.scrobble({
+                    artist: trackData.author,
+                    track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
+                    album: trackData.location,
+                    duration,
+                    timestamp: Math.floor(Date.now() / 1000) - duration,
+                }).catch(e => console.error("Failed to scrobble track:", e));
 
-            fm.updateNowPlaying({
-                artist: trackData.author,
-                track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
-                album: trackData.location,
-                duration: duration,
-            }).catch(e => console.error("Failed to update Now Playing:", e));
+                fm.updateNowPlaying({
+                    artist: trackData.author,
+                    track: (trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track") as string,
+                    album: trackData.location,
+                    duration: duration,
+                }).catch(e => console.error("Failed to update Now Playing:", e));
+            }
 
             scrobbleTimer = 0;
         }, duration * 1000);
@@ -79,7 +81,7 @@ const html = `
             const trackData = soundtrackMap.get(trackName);
 
             Log(`Track data for file ${path}:`, trackData ?? "No metadata found for this track");
-            
+
             if (trackData) {
 
                 // get track duration

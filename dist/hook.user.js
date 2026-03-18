@@ -185,7 +185,7 @@
       if (!stateId) throw new Error("No pending auth state \u2014 call initiateAuth() first.");
       for (let i = 0; i < 60; i++) {
         await new Promise((r) => setTimeout(r, 2e3));
-        console.log(`polling ${base}/auth/poll/${encodeURIComponent(stateId)}`);
+        Log(`Auth: polling ${base}/auth/poll/${encodeURIComponent(stateId)}`);
         const poll = await gmGet(`${base}/auth/poll/${encodeURIComponent(stateId)}`);
         if (poll["error"]) throw new Error(`Auth failed: ${poll["error"]}`);
         if (poll["done"]) {
@@ -263,19 +263,21 @@
     const setupTrackLoop = (trackData, duration) => {
       if (loopInterval) clearInterval(loopInterval);
       loopInterval = setInterval(() => {
-        fm.scrobble({
-          artist: trackData.author,
-          track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
-          album: trackData.location,
-          duration,
-          timestamp: Math.floor(Date.now() / 1e3) - duration
-        }).catch((e) => console.error("Failed to scrobble track:", e));
-        fm.updateNowPlaying({
-          artist: trackData.author,
-          track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
-          album: trackData.location,
-          duration
-        }).catch((e) => console.error("Failed to update Now Playing:", e));
+        if (scrobblingEnabled) {
+          fm.scrobble({
+            artist: trackData.author,
+            track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
+            album: trackData.location,
+            duration,
+            timestamp: Math.floor(Date.now() / 1e3) - duration
+          }).catch((e) => console.error("Failed to scrobble track:", e));
+          fm.updateNowPlaying({
+            artist: trackData.author,
+            track: trackData.name?.toLowerCase() ?? trackData.id ?? "Unknown Track",
+            album: trackData.location,
+            duration
+          }).catch((e) => console.error("Failed to update Now Playing:", e));
+        }
         scrobbleTimer = 0;
       }, duration * 1e3);
     };
@@ -285,11 +287,10 @@
         const trackName = path.match(/([^/]+)\.opus$/)?.[1];
         if (!trackName) return;
         const trackData = soundtrackMap.get(trackName);
-        console.log(trackData);
+        Log(`Track data for file ${path}:`, trackData ?? "No metadata found for this track");
         if (trackData) {
           getAudioBuffer(path).then((buffer) => {
             const duration = Math.floor(buffer.duration) >= 30 ? Math.floor(buffer.duration) : 30;
-            console.log(`Track duration: ${duration} seconds`);
             if (session && scrobblingEnabled) {
               if (currentlyPlaying && scrobbleTimer > 30) {
                 const prevData = currentlyPlaying.data;
